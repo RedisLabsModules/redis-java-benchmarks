@@ -17,7 +17,7 @@ import redis.clients.jedis.JedisPool;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @State(Scope.Benchmark)
 @Fork(1)
-@Warmup(iterations=1,time = 1, timeUnit = TimeUnit.SECONDS)
+@Warmup(iterations=1, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations=3,time = 10, timeUnit = TimeUnit.SECONDS)
 public class BenchmarkString {
 
@@ -52,11 +52,10 @@ public class BenchmarkString {
         client = jedisPool.getResource();
         client.flushAll();
         value = "";
-        op = 0;
-        StringBuilder s = new StringBuilder();
         for (int i = 0; i < dataSize; i++) {
             value = value + "x";
         }
+        client.set("key-1", value);
     }
     @TearDown
     public void teardown() {
@@ -65,10 +64,17 @@ public class BenchmarkString {
     }
 
     @Benchmark
-    public void setGet(Blackhole bh) {
-        op++;
-        String key = "key-" + (op % keyMaximum);
-        bh.consume(client.set(key, value));
-        bh.consume(client.get(key));
+    public void BenchmarkSet(BenchmarkString bs, Blackhole bh) {
+        bh.consume(client.set("key-1", value));
+    }
+
+    @Benchmark
+    public void BenchmarkSetx(BenchmarkString bs, Blackhole bh) {
+        bh.consume(client.setex("key-1", 1000, value));
+    }
+    @Benchmark
+    public void BenchmarkGet(BenchmarkString bs, Blackhole bh) {
+        bh.consume(client.get("key-1"));
+
     }
 }
